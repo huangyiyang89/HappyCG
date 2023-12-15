@@ -4,24 +4,38 @@ import hcg
 import hcg.observer
 
 
-class Battle(hcg.observer.Observer):
+class BattleManager(hcg.observer.Observer):
     def __init__(self, hcg: 'hcg.Hcg') -> None:
         self.hcg = hcg
         self.mem = hcg.mem
+        self.player = None
+        self.pet = None
         self._enemies = []
         self._friends = []
         self._player_skills = []
         self.auto_battle = False
+        self.speed_battle = False
 
+    @property
+    def battle_units_buffer(self):
+        return self.mem.read_string(0x00590758, 1024)
+    
     def update_units(self):
         self._enemies.clear()
         self._friends.clear()
-        unit_str = self.mem.read_string(0x00590758, 1024)
+        unit_str = self.battle_units_buffer
         if len(unit_str) < 12:
             return
+
         split_list = unit_str[4:].split('|')
         for i in range(0, len(split_list)-12, 12):
             u = Unit(split_list[i:i+12])
+            player_pos = self.mem.read_int(0x005989DC)
+            pet_pos = player_pos-5 if player_pos > 4 else player_pos+5
+            if u.pos == player_pos:
+                self.player = u
+            if u.pos == pet_pos:
+                self.pet = u
             if u.is_enemy:
                 self._enemies.append(u)
             else:
@@ -33,7 +47,16 @@ class Battle(hcg.observer.Observer):
             name = self.mem.read_string(0x00E8D6EC+0x4C4C*i)
             level = self.mem.read_int(0x00E8D6EC+0x4C4C*i+0x1C)
             skill = PlayerSkill(i, name, level)
+            for j in range(level):
+                sub_skill_name = self.mem.read_string(
+                    0x00E8D6EC+0x4C4C*i+0x3C+0x94*j)
+                sub_skill_mp_cost = self.mem.read_int(
+                    0x00E8D6EC+0x4C4C*i+0xB8+0x94*j)
+                sub_skill = SubSkill(
+                    j, sub_skill_name, sub_skill_mp_cost)
+                skill.sub_skill.append(sub_skill)
             self._player_skills.append(skill)
+        pass
 
     def get_position_info_str(self, pos):
         """获取位置上怪物信息文本，用来输出"""
@@ -122,8 +145,9 @@ class Battle(hcg.observer.Observer):
 
         if not self.auto_battle:
             return
-
         if self.is_player_turn:
+            if self.speed_battle:
+                time.sleep(3)
             aoe_skill = self.get_aoe_skill()
             enemies_count = len(self.enemies)
             random_enemy = random.choice(self.enemies)
@@ -138,7 +162,11 @@ class Battle(hcg.observer.Observer):
             random_enemy = random.choice(self.enemies)
             self.pet_command(0, random_enemy.pos)
 
-    def update(self):
+        if self.speed_battle:
+            t0 = self.mem.read_double(0x0072B9D8)
+            self.mem.write_double(0x0072B9D8, t0-300)
+
+    def on_update(self):
         self.update_units()
         self.update_player_skills()
 
@@ -161,6 +189,10 @@ class Unit:
         self.max_hp = int(data_list[6], 16)
         self.mp = int(data_list[7], 16)
         self.max_mp = int(data_list[8], 16)
+        self.per_hp = self.hp / self.max_hp
+        self.per_mp = self.mp / self.max_mp
+        self.los_hp = self.max_hp - self.hp
+        self.los_mp = self.max_mp - self.mp
         self.is_enemy = True if self.pos > 9 else False
 
     def print(self):
@@ -178,3 +210,11 @@ class PlayerSkill:
         self.index = index
         self.name = name
         self.level = level
+        self.sub_skill = []
+
+
+class SubSkill:
+    def __init__(self, index, name, mp_cost) -> None:
+        self.index = index
+        self.name = name
+        self.mp_cost = mp_cost

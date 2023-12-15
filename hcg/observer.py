@@ -1,6 +1,9 @@
 class Observer(object):
-    def update(self):
+    def on_update(self):
         pass
 
     def on_fighting(self):
+        pass
+
+    def on_battle_buffer_changed(self):
         pass

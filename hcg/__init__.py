@@ -16,16 +16,17 @@ class Pymem(pymem.Pymem):
 
 
 class Hcg(object):
-    # 静态变量，保存已打开的游戏的process id
+    # 保存已打开的游戏的process id
     __opened_cg_processIDs = []
 
     def __init__(self, processID):
         self.mem = Pymem(processID)
         self.stop = False
+        self.last_battle_buffer = ''
 
         Hcg.__opened_cg_processIDs.append(processID)
 
-        self.battle = hcg.battle.Battle(self)
+        self.battle = hcg.battle.BattleManager(self)
         self.observers = []
         self.observers.append(self.battle)
 
@@ -44,9 +45,13 @@ class Hcg(object):
 
     def start_loop(self):
         while not self.stop:
-            time.sleep(1)
+            time.sleep(0.1)
             for ob in self.observers:
-                ob.update()
+                ob.on_update()
+            if self.battle.battle_units_buffer != self.last_battle_buffer:
+                self.last_battle_buffer = self.battle.battle_units_buffer
+                for ob in self.observers:
+                    ob.on_battle_buffer_changed()
             if self.is_fighting:
                 for ob in self.observers:
                     ob.on_fighting()

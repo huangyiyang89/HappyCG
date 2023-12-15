@@ -16,28 +16,37 @@ def main():
         pywebio.session.set_env(title=cg.player_name)
         pywebio.output.put_text(cg.player_name).style(
             'font-size:24px;font-weight:bold')
-        pywebio.output.put_button('开启/关闭自动战斗', lambda: switch_auto_battle(cg))
+        pywebio.output.put_button(
+            '开启/关闭自动战斗', lambda: switch_auto_battle(cg)
+        ).style('margin-bottom:20px;margin-right:20px;display:inline-block')
+        pywebio.output.put_button(
+            '开启/关闭高速战斗', lambda: switch_speed_battle(cg)
+        ).style('margin-bottom:20px;display:inline-block')
 
         class UI(hcg.observer.Observer):
-            def update(self):
+            def on_battle_buffer_changed(self):
                 pywebio.output.clear(scope='battle')
                 pywebio.output.put_grid([
-                    [pywebio.output.put_text(cg.battle.get_position_info_str(14)),
+                    [pywebio.output.put_text(
+                        cg.battle.get_position_info_str(14)),
                      pywebio.output.put_text(
                          cg.battle.get_position_info_str(12)),
                      pywebio.output.put_text(
                          cg.battle.get_position_info_str(10)),
                      pywebio.output.put_text(
                          cg.battle.get_position_info_str(11)),
-                     pywebio.output.put_text(cg.battle.get_position_info_str(13))],
-                    [pywebio.output.put_text(cg.battle.get_position_info_str(19)),
+                     pywebio.output.put_text(
+                         cg.battle.get_position_info_str(13))],
+                    [pywebio.output.put_text(
+                        cg.battle.get_position_info_str(19)),
                      pywebio.output.put_text(
                          cg.battle.get_position_info_str(17)),
                      pywebio.output.put_text(
                          cg.battle.get_position_info_str(15)),
                      pywebio.output.put_text(
                          cg.battle.get_position_info_str(16)),
-                     pywebio.output.put_text(cg.battle.get_position_info_str(18))],
+                     pywebio.output.put_text(
+                         cg.battle.get_position_info_str(18))],
                 ], cell_width='200px', cell_height='100px', scope='battle')
 
         pywebio.output.set_scope('battle')
@@ -60,10 +69,19 @@ def index():
 def switch_auto_battle(cg: hcg.Hcg):
     if cg.battle.auto_battle:
         cg.battle.auto_battle = False
-        pywebio.output.toast('自动战斗已关闭')
+        pywebio.output.toast('自动战斗已关闭', color='warn')
     else:
         cg.battle.auto_battle = True
-        pywebio.output.toast('自动战斗已开启')
+        pywebio.output.toast('自动战斗已开启', color='success')
+
+
+def switch_speed_battle(cg: hcg.Hcg):
+    if cg.battle.speed_battle:
+        cg.battle.speed_battle = False
+        pywebio.output.toast('高速战斗已关闭', color='warn')
+    else:
+        cg.battle.speed_battle = True
+        pywebio.output.toast('高速战斗已开启', color='success')
 
 
 pywebio.platform.start_server(
