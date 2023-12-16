@@ -75,7 +75,8 @@ class BattleManager(hcg.observer.Observer):
             pet = Pet(i, name, battle_flag)
             self._pets.append(pet)
             if battle_flag == 2:
-                self.pet = pet
+                # self.pet = pet
+                pass
             for j in range(10):
                 skill_name = self.mem.read_string(0x00ED50C6+i*0x5110+j*0x8C)
                 skill_cost = self.mem.read_int(0x00ED5144+i*0x5110+j*0x8C)
@@ -105,6 +106,13 @@ class BattleManager(hcg.observer.Observer):
         for skill in self.player_skills:
             if skill.pos == 0:
                 return skill
+        return None
+    
+    @property
+    def battle_petskills(self):
+        for pet in self._pets:
+            if pet.battle_flag == 2:
+                return pet.skills
         return None
 
     @property
@@ -148,7 +156,9 @@ class BattleManager(hcg.observer.Observer):
         self.execute_player_command(f"H|{pos:X}")
 
     def pet_command(self, index, pos):
-        self.execute_pet_command(f"W|{index:X}|{pos:X}")
+        command_str = f"W|{index:X}|{pos:X}"
+        print(command_str)
+        self.execute_pet_command(command_str)
 
     def execute_pet_command(self, pet_battle_order='W|0|E'):
         ADDR_PET_BUFFER = 0x00543EC0
@@ -179,7 +189,7 @@ class BattleManager(hcg.observer.Observer):
         if self.is_player_turn:
             if 'M|' in self.recv_message_buffer \
                     or 'C|' in self.recv_message_buffer:
-                pass
+                print('waiting anime...')
 
             else:
                 if self.hcg.job_name in ['見習傳教士', '傳教士', '牧師', '主教', '大主教']:
@@ -217,12 +227,12 @@ class BattleManager(hcg.observer.Observer):
         if self.is_pet_turn:
             random_enemy = random.choice(self.enemies)
             heal_skill = next(
-                (skill for skill in self.pet.skills if skill.name in '吸血'), None)
+                (skill for skill in self.battle_petskills if skill.name in '吸血'), None)
             attack = next(
-                (skill for skill in self.pet.skills if skill.name in '攻擊'), None)
+                (skill for skill in self.battle_petskills if skill.name in '攻擊'), None)
             if self.pet.per_hp <= 80 and heal_skill is not None:
                 self.pet_command(heal_skill.index, random_enemy.pos)
-            elif self.pet.mp > self.pet.skills[0].cost:
+            elif self.pet.mp > self.battle_petskills[0].cost:
                 self.pet_command(0, random_enemy.pos)
             else:
                 self.pet_command(attack.index, random_enemy.pos)
