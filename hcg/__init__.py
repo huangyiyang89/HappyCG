@@ -6,12 +6,12 @@ import hcg.battle
 
 class Pymem(pymem.Pymem):
     # 重写支持big编码
-    def read_string(handle, address, byte=50):
+    def read_string(handle, address, byte=50, encoding='big5', end=b'\x00'):
         buff = pymem.Pymem.read_bytes(handle, address, byte)
-        i = buff.find(b'\x00')
+        i = buff.find(end)
         if i != -1:
             buff = buff[:i]
-        buff = buff.decode('big5')
+        buff = buff.decode(encoding, 'replace')
         return buff
 
 
@@ -64,6 +64,10 @@ class Hcg(object):
         Hcg.__opened_cg_processIDs.remove(self.mem.process_id)
 
         self.battle = None
+
+    @property
+    def job_name(self):
+        return self.mem.read_string(0x00E8D6D0)
 
     @property
     def player_name(self):

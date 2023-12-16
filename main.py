@@ -67,20 +67,20 @@ def index():
 
 
 def switch_auto_battle(cg: hcg.Hcg):
-    if cg.battle.auto_battle:
-        cg.battle.auto_battle = False
+    if cg.battle.enable_auto_battle:
+        cg.battle.enable_auto_battle = False
         pywebio.output.toast('自动战斗已关闭', color='warn')
     else:
-        cg.battle.auto_battle = True
+        cg.battle.enable_auto_battle = True
         pywebio.output.toast('自动战斗已开启', color='success')
 
 
 def switch_speed_battle(cg: hcg.Hcg):
-    if cg.battle.speed_battle:
-        cg.battle.speed_battle = False
+    if cg.battle.enable_speed_battle:
+        cg.battle.enable_speed_battle = False
         pywebio.output.toast('高速战斗已关闭', color='warn')
     else:
-        cg.battle.speed_battle = True
+        cg.battle.enable_speed_battle = True
         pywebio.output.toast('高速战斗已开启', color='success')
 
 
