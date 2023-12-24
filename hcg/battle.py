@@ -162,10 +162,6 @@ class BattleManager(hcg.observer.Observer):
         self.mem.write_string(ADDR_PLAYER_BUFFER, 'G\0')
         self.mem.write_bytes(ADDR_PLAYER_FLAG, bytes.fromhex('74 5E'), 2)
 
-    # ls add
-    def player_magic_skill_command(self, index, lv, pos):
-        self.execute_player_command(f"S|{index:X}|{lv - 1:X}|29")
-
     def player_skill_command(self, index, lv, pos):
         self.execute_player_command(f"S|{index:X}|{lv - 1:X}|{pos:X}")
 
