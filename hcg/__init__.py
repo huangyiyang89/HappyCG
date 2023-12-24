@@ -30,6 +30,7 @@ class Hcg(object):
         self.observers = []
         self.observers.append(self.battle)
 
+
     def get_all_processID(process_name=b'bluecg.exe'):
         list = pymem.process.list_processes()
         for process in list:
