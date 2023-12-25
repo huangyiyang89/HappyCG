@@ -210,13 +210,13 @@ class BattleManager(hcg.observer.Observer):
                         1 for friend in self.friends if friend.per_hp <= 85)
                     cross_pos = self.cross_heal_pos()
                     lowest_friend = min(
-                        self.friends, key=lambda unit: unit.value)
+                        self.friends, key=lambda unit: unit.per_hp)
                     if count_below_85per > 4:
-                        skill = self.get_skill('超强補血魔法')
+                        skill = self.get_skill('超強補血魔法')
                         self.player_skill_command(
                             skill.index, skill.level, 0x28)
                     elif cross_pos >= 0:
-                        skill = self.get_skill('强力補血魔法')
+                        skill = self.get_skill('強力補血魔法')
                         self.player_skill_command(
                             skill.index, skill.level, cross_pos + 20)
                     elif lowest_friend.per_hp <= 80:
