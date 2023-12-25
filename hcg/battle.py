@@ -327,10 +327,10 @@ class Unit:
         self.max_hp = int(data_list[6], 16)
         self.mp = int(data_list[7], 16)
         self.max_mp = int(data_list[8], 16)
-        self.per_hp = self.hp / self.max_hp
-        self.per_mp = self.mp / self.max_mp
-        self.los_hp = self.max_hp - self.hp
-        self.los_mp = self.max_mp - self.mp
+        self.per_hp = self.hp / self.max_hp * 100
+        self.per_mp = self.mp / self.max_mp * 100
+        self.los_hp = self.max_hp - self.hp * 100
+        self.los_mp = self.max_mp - self.mp * 100
         self.is_enemy = True if self.pos > 9 else False
 
     def info_str(self):
