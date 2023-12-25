@@ -16,6 +16,8 @@ class BattleManager(hcg.observer.Observer):
         self._pets = []
         self.enable_auto_battle = False
         self.enable_speed_battle = False
+        self._selected_aoe_skill = None
+        self._selected_single_skill = None
 
     @property
     def battle_units_buffer(self):
@@ -33,10 +35,10 @@ class BattleManager(hcg.observer.Observer):
             return
 
         split_list = unit_str[4:].split('|')
-        for i in range(0, len(split_list)-12, 12):
-            u = Unit(split_list[i:i+12])
+        for i in range(0, len(split_list) - 12, 12):
+            u = Unit(split_list[i:i + 12])
             player_pos = self.mem.read_int(0x005989DC)
-            pet_pos = player_pos-5 if player_pos > 4 else player_pos+5
+            pet_pos = player_pos - 5 if player_pos > 4 else player_pos + 5
             if u.pos == player_pos:
                 self.player = u
             if u.pos == pet_pos:
@@ -49,16 +51,16 @@ class BattleManager(hcg.observer.Observer):
     def update_player_skills(self):
         self._player_skills.clear()
         for i in range(0, 14):
-            name = self.mem.read_string(0x00E8D6EC+0x4C4C*i)
-            level = self.mem.read_int(0x00E8D6EC+0x4C4C*i+0x1C)
-            pos = self.mem.read_int(0x00E8D724+0x4C4C*i)
+            name = self.mem.read_string(0x00E8D6EC + 0x4C4C * i)
+            level = self.mem.read_int(0x00E8D6EC + 0x4C4C * i + 0x1C)
+            pos = self.mem.read_int(0x00E8D724 + 0x4C4C * i)
             if len(name) > 0:
                 skill = Skill(i, name, level, pos)
                 for j in range(level):
                     sub_skill_name = self.mem.read_string(
-                        0x00E8D6EC+0x4C4C*i+0x3C+0x94*j)
+                        0x00E8D6EC + 0x4C4C * i + 0x3C + 0x94 * j)
                     sub_skill_mp_cost = self.mem.read_int(
-                        0x00E8D6EC+0x4C4C*i+0xB8+0x94*j)
+                        0x00E8D6EC + 0x4C4C * i + 0xB8 + 0x94 * j)
                     sub_skill = SubSkill(
                         j, sub_skill_name, sub_skill_mp_cost)
                     skill.sub_skill.append(sub_skill)
@@ -68,8 +70,8 @@ class BattleManager(hcg.observer.Observer):
     def update_pets(self):
         self._pets.clear()
         for i in range(5):
-            name = self.mem.read_string(0x00ED5694+i*0x5110)
-            battle_flag = self.mem.read_short(0x00ED5692+i*0x5110)
+            name = self.mem.read_string(0x00ED5694 + i * 0x5110)
+            battle_flag = self.mem.read_short(0x00ED5692 + i * 0x5110)
             if (len(name) < 2):
                 continue
             pet = Pet(i, name, battle_flag)
@@ -78,8 +80,8 @@ class BattleManager(hcg.observer.Observer):
                 # self.pet = pet
                 pass
             for j in range(10):
-                skill_name = self.mem.read_string(0x00ED50C6+i*0x5110+j*0x8C)
-                skill_cost = self.mem.read_int(0x00ED5144+i*0x5110+j*0x8C)
+                skill_name = self.mem.read_string(0x00ED50C6 + i * 0x5110 + j * 0x8C)
+                skill_cost = self.mem.read_int(0x00ED5144 + i * 0x5110 + j * 0x8C)
                 if (len(skill_name) > 0):
                     skill = PetSkill(j, skill_name, skill_cost)
                     pet.skills.append(skill)
@@ -96,9 +98,20 @@ class BattleManager(hcg.observer.Observer):
         self.update_player_skills()
         return self._player_skills
 
+    def set_selected_skill(self, name, mode=0):
+        '''
+        :param name: 技能名稱
+        :param mode: 0:aoe, 1:single
+        :return:
+        '''
+        if mode == 0:
+            self._selected_aoe_skill = name
+        else:
+            self._selected_single_skill = name
+
     def get_aoe_skill(self):
         for skill in self.player_skills:
-            if skill.name in ['亂射', '氣功彈', '刀刃亂舞', '因果報應']:
+            if skill.name in ['亂射', '氣功彈', '刀刃亂舞', '因果報應', '連擊']:
                 return skill
         return None
 
@@ -107,7 +120,7 @@ class BattleManager(hcg.observer.Observer):
             if skill.pos == 0:
                 return skill
         return None
-    
+
     @property
     def battle_petskills(self):
         for pet in self._pets:
@@ -142,7 +155,7 @@ class BattleManager(hcg.observer.Observer):
         ADDR_PLAYER_BUFFER = 0x00543F84
         ADDR_PLAYER_FLAG = 0x0048F9F7
         # hook
-        self.mem.write_string(ADDR_PLAYER_BUFFER, player_battle_order+'\0')
+        self.mem.write_string(ADDR_PLAYER_BUFFER, player_battle_order + '\0')
         self.mem.write_bytes(ADDR_PLAYER_FLAG, bytes.fromhex('90 90'), 2)
         time.sleep(0.1)
         # 还原
@@ -150,7 +163,7 @@ class BattleManager(hcg.observer.Observer):
         self.mem.write_bytes(ADDR_PLAYER_FLAG, bytes.fromhex('74 5E'), 2)
 
     def player_skill_command(self, index, lv, pos):
-        self.execute_player_command(f"S|{index:X}|{lv-1:X}|{pos:X}")
+        self.execute_player_command(f"S|{index:X}|{lv - 1:X}|{pos:X}")
 
     def player_attack_command(self, pos):
         self.execute_player_command(f"H|{pos:X}")
@@ -165,14 +178,14 @@ class BattleManager(hcg.observer.Observer):
         ADDR_PET_FLAG = 0x00475A8C
 
         # hook
-        self.mem.write_string(ADDR_PET_BUFFER, pet_battle_order+'\0')
+        self.mem.write_string(ADDR_PET_BUFFER, pet_battle_order + '\0')
         self.mem.write_bytes(ADDR_PET_FLAG, bytes.fromhex('90 90'), 2)
         # self.mem.write_int(ADDR_PET_SELECT, 0xFFFFFFFF)
         # self.mem.write_int(ADDR_PET_SELECTED, 255)
         self.mem.write_bytes(0x00CDA984, bytes.fromhex('02'), 1)
         time.sleep(0.1)
         # 还原
-        self.mem.write_string(ADDR_PET_BUFFER, r'W|%X|%X'+'\0')
+        self.mem.write_string(ADDR_PET_BUFFER, r'W|%X|%X' + '\0')
         self.mem.write_bytes(ADDR_PET_FLAG, bytes.fromhex('74 73'), 2)
 
     def get_skill(self, name):
@@ -197,15 +210,15 @@ class BattleManager(hcg.observer.Observer):
                         1 for friend in self.friends if friend.per_hp <= 85)
                     cross_pos = self.cross_heal_pos()
                     lowest_friend = min(
-                        self.friends, key=lambda unit: unit.value)
+                        self.friends, key=lambda unit: unit.per_hp)
                     if count_below_85per > 4:
-                        skill = self.get_skill('超强補血魔法')
+                        skill = self.get_skill('超強補血魔法')
                         self.player_skill_command(
                             skill.index, skill.level, 0x28)
                     elif cross_pos >= 0:
-                        skill = self.get_skill('强力補血魔法')
+                        skill = self.get_skill('強力補血魔法')
                         self.player_skill_command(
-                            skill.index, skill.level, cross_pos+20)
+                            skill.index, skill.level, cross_pos + 20)
                     elif lowest_friend.per_hp <= 80:
                         skill = self.get_skill('補血魔法')
                         self.player_skill_command(
@@ -213,6 +226,17 @@ class BattleManager(hcg.observer.Observer):
                     else:
                         random_enemy = random.choice(self.enemies)
                         self.player_attack_command(random_enemy.pos)
+                elif self.hcg.job_name in ['見習魔術師', '魔術師', '王宮魔術師', '魔導士', '大魔導士']:
+                    enemies_count = len(self.enemies)
+                    random_enemy = random.choice(self.enemies)
+                    if self._selected_aoe_skill is None or enemies_count < 3:
+                        skill = self.get_skill(self._selected_single_skill)
+                        self.player_skill_command(
+                            skill.index, skill.level, random_enemy.pos)
+                    else:
+                        skill = self.get_skill(self._selected_aoe_skill)
+                        self.player_skill_command(
+                            skill.index, skill.level, 0x29)
                 else:
                     aoe_skill = self.get_aoe_skill()
                     enemies_count = len(self.enemies)
@@ -239,7 +263,7 @@ class BattleManager(hcg.observer.Observer):
 
         if self.enable_speed_battle:
             t0 = self.mem.read_double(0x0072B9D8)
-            self.mem.write_double(0x0072B9D8, t0-100)
+            self.mem.write_double(0x0072B9D8, t0 - 100)
 
     def on_update(self):
         self.update_units()
@@ -265,7 +289,7 @@ class BattleManager(hcg.observer.Observer):
         units_bit = 0
 
         # 指定位置单位是否存在
-        exists_list = [0]*10
+        exists_list = [0] * 10
 
         for unit in self.friends:
             exists_list[unit.pos] = True
@@ -310,9 +334,9 @@ class Unit:
         self.is_enemy = True if self.pos > 9 else False
 
     def info_str(self):
-        return self.name+' LV:'+str(self.level)+'\r\n'+str(
-            self.hp)+'/'+str(self.max_hp)+'\r\n'+str(
-                self.mp)+'/'+str(self.max_mp)
+        return self.name + ' LV:' + str(self.level) + '\r\n' + str(
+            self.hp) + '/' + str(self.max_hp) + '\r\n' + str(
+            self.mp) + '/' + str(self.max_mp)
 
 
 class Skill:
