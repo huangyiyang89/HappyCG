@@ -23,7 +23,8 @@ def main():
             '开启/关闭高速战斗', lambda: switch_speed_battle(cg)
         ).style('margin-bottom:20px;display:inline-block')
 
-        if cg.battle.hcg.job_name in ['見習魔術師', '魔術師', '王宮魔術師', '魔導士', '大魔導士']:
+        if cg.battle.hcg.job_name in ['見習魔術師', '魔術師', '王宮魔術師',
+                                      '魔導士', '大魔導士']:
             pywebio.output.put_button(
                 '選擇魔術技能', lambda: add_select_skill_ui(cg)
             ).style('margin-bottom:20px;margin-left:20px, display:inline-block')
@@ -98,15 +99,14 @@ def add_select_skill_ui(cg: hcg.Hcg):
     with pywebio.output.use_scope('select_skill', clear=True):
         pywebio.output.put_table([
             ['aoe: ', pywebio.input.select('選擇超強魔法', skills_names,
-                             onchange=lambda name: selected_skill(name, cg, 0))],
+                                           value=skills_names[0],
+                                           validate=lambda name: selected_skill(
+                                               name, cg, 0))],
             ['單體', pywebio.input.select('選擇單體魔法', skills_names,
-                             onchange=lambda name: selected_skill(name, cg, 1))]
+                                          value=skills_names[0],
+                                          validate=lambda name: selected_skill(
+                                              name, cg, 1))]
         ])
-
-
-
-
-
 
 
 pywebio.platform.start_server(
